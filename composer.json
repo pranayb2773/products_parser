@@ -1,5 +1,5 @@
 {
-    "name": "pranayb2773/products_parser",
+  "name": "pranayb2773/products_parser",
   "description": "Supplier Product List Processor with native PHP",
   "license": "MIT",
   "type": "project",
@@ -19,11 +19,19 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "BigPhoneStore\\Tests\\": "tests/"
+      "App\\Tests\\": "tests/"
     }
   },
   "require-dev": {
+    "friendsofphp/php-cs-fixer": "^3.91",
     "pestphp/pest": "^4.1"
+  },
+  "scripts": {
+    "test": "pest",
+    "test:phpunit": "phpunit --testdox",
+    "test:parallel": "pest --parallel",
+    "format": "php-cs-fixer fix",
+    "check-format": "php-cs-fixer fix --dry-run --diff"
   },
   "config": {
     "optimize-autoloader": true,
