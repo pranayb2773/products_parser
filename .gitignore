@@ -1,0 +1,16 @@
+# Dependencies
+/vendor/
+composer.lock
+
+# IDE files
+/.idea/
+/.vscode/
+
+# Test coverage
+/coverage/
+.phpunit.result.cache
+
+# Temporary files
+/tmp/
+*.tmp
+*.cache

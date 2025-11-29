@@ -1,0 +1,36 @@
+{
+    "name": "pranayb2773/products_parser",
+  "description": "Supplier Product List Processor with native PHP",
+  "license": "MIT",
+  "type": "project",
+  "authors": [
+    {
+        "name": "Pranay Baddam",
+        "email": "pranayb2773@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^8.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "BigPhoneStore\\Tests\\": "tests/"
+    }
+  },
+  "require-dev": {
+    "pestphp/pest": "^4.1"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true,
+    "preferred-install": "dist",
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  }
+}
