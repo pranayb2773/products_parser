@@ -28,7 +28,7 @@ final readonly class Product
     {
         return json_encode(
             $this->toArray(),
-            JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT
         );
     }
 
@@ -81,13 +81,13 @@ final readonly class Product
     public function getUniqueKey(): string
     {
         $payload = implode('|', [
-            strtolower($this->make),
-            strtolower($this->model),
-            strtolower($this->colour ?? ''),
-            strtolower($this->capacity ?? ''),
-            strtolower($this->network ?? ''),
-            strtolower($this->grade ?? ''),
-            strtolower($this->condition ?? ''),
+            mb_strtolower($this->make),
+            mb_strtolower($this->model),
+            mb_strtolower($this->colour ?? ''),
+            mb_strtolower($this->capacity ?? ''),
+            mb_strtolower($this->network ?? ''),
+            mb_strtolower($this->grade ?? ''),
+            mb_strtolower($this->condition ?? ''),
         ]);
 
         return sha1($payload);

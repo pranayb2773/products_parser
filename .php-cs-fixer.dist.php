@@ -31,6 +31,7 @@ return new PhpCsFixer\Config()
         'mb_str_functions' => true,
         'modernize_types_casting' => true,
         'new_with_parentheses' => false,
+        'no_extra_blank_lines' => true,
         'no_superfluous_elseif' => true,
         'no_useless_else' => true,
         'no_multiple_statements_per_line' => true,

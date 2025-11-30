@@ -6,6 +6,7 @@ namespace App\Parsers;
 
 use App\Contracts\FileParserInterface;
 use App\Enums\CsvDelimiter;
+use App\Enums\CsvFormat;
 use App\Mapping\FieldMapper;
 use App\Models\Product;
 use Generator;
@@ -36,7 +37,7 @@ final readonly class CsvParser implements FileParserInterface
         try {
             $delimiter = $this->delimiter ?? $this->detectDelimiter($handle);
 
-            $headers = fgetcsv($handle, self::MAX_LINE_LENGTH, $delimiter->value);
+            $headers = fgetcsv($handle, self::MAX_LINE_LENGTH, $delimiter->value, CsvFormat::ENCLOSURE->value, CsvFormat::ESCAPE->value);
 
             if ($headers === false) {
                 throw new RuntimeException("Failed to read headers from file: {$filePath}");
@@ -45,7 +46,7 @@ final readonly class CsvParser implements FileParserInterface
             $headers = $this->cleanHeaders($headers);
             $rowNumber = 1;
 
-            while (($row = fgetcsv($handle, self::MAX_LINE_LENGTH, $delimiter->value)) !== false) {
+            while (($row = fgetcsv($handle, self::MAX_LINE_LENGTH, $delimiter->value, CsvFormat::ENCLOSURE->value, CsvFormat::ESCAPE->value)) !== false) {
                 $rowNumber++;
 
                 if ($this->isEmptyRow($row)) {
@@ -83,8 +84,8 @@ final readonly class CsvParser implements FileParserInterface
             return CsvDelimiter::COMMA;
         }
 
-        $commaCount = substr_count($firstLine, CsvDelimiter::COMMA->value);
-        $tabCount = substr_count($firstLine, CsvDelimiter::TAB->value);
+        $commaCount = mb_substr_count($firstLine, CsvDelimiter::COMMA->value);
+        $tabCount = mb_substr_count($firstLine, CsvDelimiter::TAB->value);
 
         return $tabCount > $commaCount ? CsvDelimiter::TAB : CsvDelimiter::COMMA;
     }
@@ -92,20 +93,20 @@ final readonly class CsvParser implements FileParserInterface
     private function cleanHeaders(array $headers): array
     {
         return array_map(
-            static fn (string $header): string => trim($header, " \t\n\r\0\x0B\""),
+            static fn (string $header): string => mb_trim($header, " \t\n\r\0\x0B\""),
             $headers
         );
     }
 
     private function isEmptyRow(array $row): bool
     {
-        if (count($row) === 1 && trim($row[0] ?? '') === '') {
+        if (count($row) === 1 && mb_trim($row[0] ?? '') === '') {
             return true;
         }
 
         // Check if all cells are empty
         foreach ($row as $cell) {
-            if (trim($cell ?? '') !== '') {
+            if (mb_trim($cell ?? '') !== '') {
                 return false;
             }
         }

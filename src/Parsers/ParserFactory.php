@@ -22,7 +22,7 @@ final readonly class ParserFactory
             throw new RuntimeException("File not found: {$filePath}");
         }
 
-        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $extension = mb_strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
 
         return match ($extension) {
             'csv' => new CsvParser($this->fieldMapper, CsvDelimiter::COMMA),
