@@ -12,6 +12,7 @@ composer.lock
 
 # Temporary files
 /tmp/
+/.tmp/
 *.tmp
 *.cache
 

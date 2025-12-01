@@ -10,6 +10,7 @@ final readonly class SeederOptions
         public ?string $type = null,
         public ?int $count = null,
         public ?string $outputFile = null,
+        public int $parallelWorkers = 1,
     ) {
     }
 
@@ -18,6 +19,7 @@ final readonly class SeederOptions
         $type = null;
         $count = null;
         $outputFile = null;
+        $parallelWorkers = 1;
 
         for ($i = 1; $i < count($argv); $i++) {
             $arg = $argv[$i];
@@ -28,6 +30,8 @@ final readonly class SeederOptions
                 $count = (int) mb_substr($arg, 8);
             } elseif (str_starts_with($arg, '--output=')) {
                 $outputFile = mb_substr($arg, 9);
+            } elseif (str_starts_with($arg, '--parallel=')) {
+                $parallelWorkers = max(1, (int) mb_substr($arg, 11));
             }
         }
 
@@ -35,6 +39,7 @@ final readonly class SeederOptions
             type: $type,
             count: $count,
             outputFile: $outputFile,
+            parallelWorkers: $parallelWorkers,
         );
     }
 
@@ -57,5 +62,10 @@ final readonly class SeederOptions
         }
 
         return dirname(__DIR__, 2) . "/data/input/products.{$defaultExtension}";
+    }
+
+    public function isParallel(): bool
+    {
+        return $this->parallelWorkers > 1;
     }
 }

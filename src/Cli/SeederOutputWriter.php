@@ -42,25 +42,30 @@ final readonly class SeederOutputWriter
         $this->writeLine('Product Data Generator');
         $this->writeLine('');
         $this->writeLine('Usage:');
-        $this->writeLine('  php seeder.php --type=<format> --count=<number> [--output=<path>]');
+        $this->writeLine('  php seeder.php --type=<format> --count=<number> [--output=<path>] [--parallel=<workers>]');
         $this->writeLine('  php seeder.php --help');
         $this->writeLine('');
         $this->writeLine('Arguments:');
-        $this->writeLine('  --type=<format>    File format to generate (required)');
-        $this->writeLine("                     Supported: {$supported}");
+        $this->writeLine('  --type=<format>      File format to generate (required)');
+        $this->writeLine("                       Supported: {$supported}");
         $this->writeLine('');
-        $this->writeLine('  --count=<number>   Number of products to generate (required)');
-        $this->writeLine('                     Must be a positive integer');
+        $this->writeLine('  --count=<number>     Number of products to generate (required)');
+        $this->writeLine('                       Must be a positive integer');
         $this->writeLine('');
-        $this->writeLine('  --output=<path>    Custom output file path (optional)');
-        $this->writeLine('                     Default: examples/products.<type>');
+        $this->writeLine('  --output=<path>      Custom output file path (optional)');
+        $this->writeLine('                       Default: examples/products.<type>');
         $this->writeLine('');
-        $this->writeLine('  --help, -h         Show this help message');
+        $this->writeLine('  --parallel=<number>  Number of parallel workers (optional, default: 1)');
+        $this->writeLine('                       Use multiple workers for faster generation');
+        $this->writeLine('                       Requires PCNTL extension');
+        $this->writeLine('');
+        $this->writeLine('  --help, -h           Show this help message');
         $this->writeLine('');
         $this->writeLine('Examples:');
         $this->writeLine('  php seeder.php --type=csv --count=1000');
         $this->writeLine('  php seeder.php --type=json --count=50000');
         $this->writeLine('  php seeder.php --type=xml --count=100 --output=custom/data.xml');
         $this->writeLine('  php seeder.php --type=ndjson --count=10000');
+        $this->writeLine('  php seeder.php --type=csv --count=1000000 --parallel=8');
     }
 }

@@ -62,19 +62,23 @@ final readonly class ParserOutputWriter
     {
         $this->writeLine(
             <<<'HELP'
-            Usage: php parser.php --file=<input_file> [--unique-combinations=<output_file>]
+            Usage: php parser.php --file=<input_file> [--unique-combinations=<output_file>] [--parallel=<workers>]
 
             Options:
               --file=<path>                  Path to the input file (required)
                                              Supported formats: CSV, TSV, JSON, XML
               --unique-combinations=<path>   Path to the output file for unique combinations (optional)
                                              Format is auto-detected from file extension: .csv, .json, .xml
+              --parallel=<number>            Number of parallel workers (optional, default: 1)
+                                             Use multiple workers for faster processing of large files
+                                             Requires PCNTL extension
               --help, -h                     Display this help message
 
             Examples:
               php parser.php --file=data/input/products_comma_separated.csv --unique-combinations=data/output/combination_count.csv
               php parser.php --file=data/input/products.json --unique-combinations=data/output/combination_count.json
               php parser.php --file=data/input/products.xml --unique-combinations=data/output/combination_count.xml
+              php parser.php --file=data/input/products.csv --unique-combinations=data/output/results.json --parallel=4
 
             HELP
         );

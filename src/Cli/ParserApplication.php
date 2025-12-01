@@ -6,6 +6,7 @@ namespace App\Cli;
 
 use App\Mapping\FieldMapper;
 use App\Parsers\ParserFactory;
+use App\Services\ParallelProcessor;
 use App\Services\UniqueCounter;
 use JsonException;
 use RuntimeException;
@@ -72,16 +73,51 @@ final readonly class ParserApplication
         }
 
         $parser = $this->parserFactory->createFromFile($inputFile);
-        $uniqueCounter = new UniqueCounter();
-
         $this->output->writeFileHeader($inputFile);
 
+        if ($options->isParallel()) {
+            return $this->processFileParallel($options, $parser, $start);
+        }
+
+        return $this->processFileSequential($options, $parser, $start);
+    }
+
+    /**
+     * @throws JsonException
+     */
+    private function processFileSequential(ParserOptions $options, $parser, float $start): int
+    {
+        $uniqueCounter = new UniqueCounter();
         $productCount = 0;
-        foreach ($parser->parse($inputFile) as $product) {
+
+        foreach ($parser->parse($options->inputFile) as $product) {
             $productCount++;
             $this->output->writeProduct($product);
             $uniqueCounter->addProduct($product);
         }
+
+        $this->output->writeStatistics($productCount, $uniqueCounter->getCount());
+        $this->output->writeTiming($start, microtime(true), $productCount);
+
+        if ($options->hasOutputFile()) {
+            $this->writeOutputFile($options->outputFile, $uniqueCounter);
+        }
+
+        return self::EXIT_SUCCESS;
+    }
+
+    /**
+     * @throws JsonException
+     */
+    private function processFileParallel(ParserOptions $options, $parser, float $start): int
+    {
+        $parallelProcessor = new ParallelProcessor($options->parallelWorkers, $this->output);
+        $uniqueCounter = $parallelProcessor->process($parser, $options->inputFile);
+
+        $productCount = array_sum(array_map(
+            fn ($data) => $data['count'],
+            $uniqueCounter->getCombinations()
+        ));
 
         $this->output->writeStatistics($productCount, $uniqueCounter->getCount());
         $this->output->writeTiming($start, microtime(true), $productCount);

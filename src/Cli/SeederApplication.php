@@ -6,6 +6,7 @@ namespace App\Cli;
 
 use App\Seeders\ProductDataGenerator;
 use App\Seeders\SeederFactory;
+use App\Services\ParallelSeeder;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -97,7 +98,13 @@ final readonly class SeederApplication
         $this->outputWriter->writeGenerationStart($count, $type);
 
         $seeder = $this->factory->create($type);
-        $seeder->seed($outputPath, $count);
+
+        if ($options->isParallel()) {
+            $parallelSeeder = new ParallelSeeder($options->parallelWorkers, $this->outputWriter);
+            $parallelSeeder->seed($seeder, $outputPath, $count);
+        } else {
+            $seeder->seed($outputPath, $count);
+        }
 
         $this->outputWriter->writeSuccess($count, $outputPath, $startTime);
 
