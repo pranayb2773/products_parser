@@ -8,6 +8,7 @@ $finder = new PhpCsFixer\Finder()
     ->ignoreVCS(true);
 
 return new PhpCsFixer\Config()
+    ->setParallelConfig(PhpCsFixer\Runner\Parallel\ParallelConfigFactory::detect())
     ->setRiskyAllowed(true) // REQUIRED for strict_types and mb_str_functions
     ->setRules([
         '@PSR12' => true,
