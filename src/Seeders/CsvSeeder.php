@@ -14,8 +14,7 @@ final readonly class CsvSeeder implements SeederInterface
     public function __construct(
         private ProductDataGenerator $generator,
         private CsvDelimiter $csvDelimiter = CsvDelimiter::COMMA
-    ) {
-    }
+    ) {}
 
     public function seed(string $outputPath, int $count): void
     {
@@ -27,12 +26,12 @@ final readonly class CsvSeeder implements SeederInterface
 
         try {
             // Write header row
-            fputcsv($handle, $this->generator->getHeaders(), $this->csvDelimiter, CsvFormat::ENCLOSURE->value, CsvFormat::ESCAPE->value);
+            fputcsv($handle, $this->generator->getHeaders(), $this->csvDelimiter->value, CsvFormat::ENCLOSURE->value, CsvFormat::ESCAPE->value);
 
             // Write data row
             for ($i = 0; $i < $count; $i++) {
                 $product = $this->generator->generate($i);
-                fputcsv($handle, array_values($product), $this->csvDelimiter, CsvFormat::ENCLOSURE->value, CsvFormat::ESCAPE->value);
+                fputcsv($handle, array_values($product), $this->csvDelimiter->value, CsvFormat::ENCLOSURE->value, CsvFormat::ESCAPE->value);
             }
         } finally {
             fclose($handle);
