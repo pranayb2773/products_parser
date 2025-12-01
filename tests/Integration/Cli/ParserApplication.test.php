@@ -1,0 +1,121 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Cli\ParserOutputWriter;
+use App\Cli\ParserApplication;
+use App\Mapping\FieldMapper;
+use App\Parsers\ParserFactory;
+
+beforeEach(function () {
+    $this->tempDir = sys_get_temp_dir() . '/cli_tests_' . uniqid();
+    mkdir($this->tempDir);
+});
+
+afterEach(function () {
+    $files = glob($this->tempDir . '/*');
+    foreach ($files as $file) {
+        if (is_file($file)) {
+            unlink($file);
+        }
+    }
+    rmdir($this->tempDir);
+});
+
+test('run with help flag', function () {
+    $application = new ParserApplication();
+
+    ob_start();
+    $exitCode = $application->run(['parser.php', '--help']);
+    $output = ob_get_clean();
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('Usage:')
+        ->and($output)->toContain('--file=<path>');
+});
+
+test('run with missing file parameter', function () {
+    $application = new ParserApplication();
+
+    ob_start();
+    $exitCode = $application->run(['parser.php']);
+    $output = ob_get_clean();
+
+    expect($exitCode)->toBe(1)
+        ->and($output)->toContain('Error: --file parameter is required');
+});
+
+test('run with non existent file', function () {
+    $application = new ParserApplication();
+
+    ob_start();
+    $exitCode = $application->run(['parser.php', '--file=nonexistent.csv']);
+    $output = ob_get_clean();
+
+    expect($exitCode)->toBe(1)
+        ->and($output)->toContain('Error: File not found');
+});
+
+test('run with valid json file', function () {
+    $jsonContent = json_encode([
+        [
+            'brand_name' => 'Apple',
+            'model_name' => 'iPhone 12',
+            'colour_name' => 'Blue',
+        ],
+    ]);
+
+    $inputFile = $this->tempDir . '/test.json';
+    file_put_contents($inputFile, $jsonContent);
+
+    $application = new ParserApplication(
+        new ParserFactory(new FieldMapper()),
+        new ParserOutputWriter()
+    );
+
+    ob_start();
+    $exitCode = $application->run(['parser.php', '--file=' . $inputFile]);
+    $output = ob_get_clean();
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('Parsing JSON file:')
+        ->and($output)->toContain('Total products processed: 1')
+        ->and($output)->toContain('Unique combinations: 1');
+});
+
+test('run with valid file and output file', function () {
+    $jsonContent = json_encode([
+        [
+            'brand_name' => 'Samsung',
+            'model_name' => 'Galaxy S21',
+        ],
+        [
+            'brand_name' => 'Samsung',
+            'model_name' => 'Galaxy S21',
+        ],
+    ]);
+
+    $inputFile = $this->tempDir . '/test.json';
+    $outputFile = $this->tempDir . '/output.json';
+    file_put_contents($inputFile, $jsonContent);
+
+    $application = new ParserApplication();
+
+    ob_start();
+    $exitCode = $application->run([
+        'parser.php',
+        '--file=' . $inputFile,
+        '--unique-combinations=' . $outputFile,
+    ]);
+    $output = ob_get_clean();
+
+    expect($exitCode)->toBe(0)
+        ->and($outputFile)->toBeFile()
+        ->and($output)->toContain('Unique combinations written to JSON file:');
+
+    $outputData = json_decode(file_get_contents($outputFile), true);
+    expect($outputData)->toBeArray()
+        ->toHaveCount(1)
+        ->and($outputData[0]['make'])->toBe('Samsung')
+        ->and($outputData[0]['count'])->toBe(2);
+});

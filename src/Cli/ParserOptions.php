@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Cli;
 
-final readonly class CliOptions
+final readonly class ParserOptions
 {
     public function __construct(
         public ?string $inputFile = null,

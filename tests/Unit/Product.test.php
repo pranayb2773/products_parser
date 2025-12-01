@@ -43,17 +43,17 @@ test('product can be created with only required fields', function () {
 });
 
 test('product throws exception when make is missing', function () {
-    expect(fn() => Product::fromArray(['model' => 'iPhone 12']))
+    expect(fn () => Product::fromArray(['model' => 'iPhone 12']))
         ->toThrow(RequiredFieldException::class, "Required field 'make' is missing or empty");
 });
 
 test('product throws exception when model is missing', function () {
-    expect(fn() => Product::fromArray(['make' => 'Apple']))
+    expect(fn () => Product::fromArray(['make' => 'Apple']))
         ->toThrow(RequiredFieldException::class, "Required field 'model' is missing or empty");
 });
 
 test('product throws exception when make is empty', function () {
-    expect(fn() => Product::fromArray(['make' => '', 'model' => 'iPhone 12']))
+    expect(fn () => Product::fromArray(['make' => '', 'model' => 'iPhone 12']))
         ->toThrow(RequiredFieldException::class);
 });
 

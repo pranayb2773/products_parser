@@ -6,7 +6,7 @@ namespace App\Cli;
 
 use App\Models\Product;
 
-final readonly class OutputWriter
+final readonly class ParserOutputWriter
 {
     private const int SEPARATOR_LENGTH = 80;
     private const string NEW_LINE = "\n";

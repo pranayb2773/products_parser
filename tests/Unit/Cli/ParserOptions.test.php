@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Cli\CliOptions;
+use App\Cli\ParserOptions;
 
 test('from arguments with both options', function () {
     $argv = [
@@ -11,7 +11,7 @@ test('from arguments with both options', function () {
         '--unique-combinations=output.csv',
     ];
 
-    $options = CliOptions::fromArguments($argv);
+    $options = ParserOptions::fromArguments($argv);
 
     expect($options->inputFile)->toBe('test.csv')
         ->and($options->outputFile)->toBe('output.csv')
@@ -25,7 +25,7 @@ test('from arguments with only file', function () {
         '--file=test.json',
     ];
 
-    $options = CliOptions::fromArguments($argv);
+    $options = ParserOptions::fromArguments($argv);
 
     expect($options->inputFile)->toBe('test.json')
         ->and($options->outputFile)->toBeNull()
@@ -36,7 +36,7 @@ test('from arguments with only file', function () {
 test('from arguments with no options', function () {
     $argv = ['parser.php'];
 
-    $options = CliOptions::fromArguments($argv);
+    $options = ParserOptions::fromArguments($argv);
 
     expect($options->inputFile)->toBeNull()
         ->and($options->outputFile)->toBeNull()
@@ -51,7 +51,7 @@ test('from arguments ignores help flag', function () {
         '--help',
     ];
 
-    $options = CliOptions::fromArguments($argv);
+    $options = ParserOptions::fromArguments($argv);
 
     expect($options->inputFile)->toBe('test.xml')
         ->and($options->isValid())->toBeTrue();
@@ -63,7 +63,7 @@ test('from arguments with file path containing equals', function () {
         '--file=path/to/file=with=equals.csv',
     ];
 
-    $options = CliOptions::fromArguments($argv);
+    $options = ParserOptions::fromArguments($argv);
 
     expect($options->inputFile)->toBe('path/to/file=with=equals.csv');
 });

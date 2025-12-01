@@ -16,8 +16,8 @@ final readonly class ParserApplication
     private const int EXIT_ERROR = 1;
 
     public function __construct(
-        private ParserFactory $parserFactory = new ParserFactory(new FieldMapper()),
-        private OutputWriter $output = new OutputWriter(),
+        private ParserFactory      $parserFactory = new ParserFactory(new FieldMapper()),
+        private ParserOutputWriter $output = new ParserOutputWriter(),
     ) {
     }
 
@@ -29,7 +29,7 @@ final readonly class ParserApplication
                 return self::EXIT_SUCCESS;
             }
 
-            $options = CliOptions::fromArguments($argv);
+            $options = ParserOptions::fromArguments($argv);
 
             if (!$options->isValid()) {
                 $this->output->writeError('--file parameter is required');
@@ -62,7 +62,7 @@ final readonly class ParserApplication
     /**
      * @throws JsonException
      */
-    private function processFile(CliOptions $options): int
+    private function processFile(ParserOptions $options): int
     {
         $start = microtime(true);
         $inputFile = $options->inputFile;
