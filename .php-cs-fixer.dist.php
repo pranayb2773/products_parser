@@ -19,6 +19,7 @@ return new PhpCsFixer\Config()
         'declare_strict_types' => true,
         'lowercase_keywords' => true,
         'lowercase_static_reference' => true,
+        'explicit_string_variable' => true,
         'final_class' => true,
         'final_internal_class' => true,
         'final_public_method_for_abstract_class' => true,
@@ -50,6 +51,7 @@ return new PhpCsFixer\Config()
         'protected_to_private' => true,
         'self_accessor' => true,
         'self_static_accessor' => true,
+        'single_quote' => true,
         'strict_comparison' => true,
         'visibility_required' => true,
 

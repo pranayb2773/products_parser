@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Cli\ParserOutputWriter;
 use App\Cli\ParserApplication;
+use App\Cli\ParserOutputWriter;
 use App\Mapping\FieldMapper;
 use App\Parsers\ParserFactory;
 
