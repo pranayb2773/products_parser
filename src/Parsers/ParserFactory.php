@@ -27,6 +27,8 @@ final readonly class ParserFactory
         return match ($extension) {
             'csv' => new CsvParser($this->fieldMapper, CsvDelimiter::COMMA),
             'tsv' => new CsvParser($this->fieldMapper, CsvDelimiter::TAB),
+            'json', 'ndjson' => new JsonParser($this->fieldMapper),
+            'xml' => new XmlParser($this->fieldMapper),
             default => throw new RuntimeException("Unsupported file format: {$extension}"),
         };
     }
