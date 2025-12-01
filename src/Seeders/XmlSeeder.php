@@ -38,7 +38,7 @@ final readonly class XmlSeeder implements SeederInterface
                 foreach ($product as $tag => $value) {
                     $escaped = htmlspecialchars((string) $value, ENT_XML1 | ENT_COMPAT, 'UTF-8');
 
-                    fwrite($handle, " <tag>{$escaped}</tag>\n");
+                    fwrite($handle, " <$tag>{$escaped}</$tag>\n");
                 }
 
                 fwrite($handle, " </product>\n");

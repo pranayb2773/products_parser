@@ -19,14 +19,16 @@ final class ProductDataGenerator
      */
     public function generate(int $index): array
     {
+        // Use modulo to create more common combinations
+        // This simulates real-world inventory where certain products are more popular
         return [
-            'brand_name'   => self::BRANDS[array_rand(self::BRANDS)],
-            'model_name'   => self::MODELS[array_rand(self::MODELS)] . ' ' . ($index % 100),
-            'colour_name'  => self::COLOURS[array_rand(self::COLOURS)],
-            'gb_spec_name' => self::CAPACITIES[array_rand(self::CAPACITIES)],
-            'network_name' => self::NETWORKS[array_rand(self::NETWORKS)],
-            'grade_name'   => self::GRADES[array_rand(self::GRADES)],
-            'condition'    => self::CONDITIONS[array_rand(self::CONDITIONS)],
+            'brand_name'   => self::BRANDS[$index % count(self::BRANDS)],
+            'model_name'   => self::MODELS[$index % count(self::MODELS)] . ' ' . ($index % 20),
+            'colour_name'  => self::COLOURS[$index % count(self::COLOURS)],
+            'gb_spec_name' => self::CAPACITIES[$index % count(self::CAPACITIES)],
+            'network_name' => self::NETWORKS[$index % count(self::NETWORKS)],
+            'grade_name'   => self::GRADES[$index % count(self::GRADES)],
+            'condition'    => self::CONDITIONS[$index % count(self::CONDITIONS)],
         ];
     }
 
