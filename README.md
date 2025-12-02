@@ -72,7 +72,6 @@ Default aliases include: brand_name -> make, model_name -> model, colour_name ->
 ## Testing and quality
 ```bash
 composer test            # Pest suite
-composer test:phpunit    # PHPUnit (TestDox)
 composer test:parallel   # Pest in parallel
 composer format          # php-cs-fixer
 composer check-format    # format check (dry run)
@@ -194,7 +193,6 @@ CLI (seeder.php)
 - **Integration Tests**: CSV/JSON/XML parsers, CLI application flows
 - Seeder functions for consistent test data generation across all formats
 - ParallelProcessor tests include PCNTL availability checks (skipped on Windows)
-- PHPUnit config available for compatibility (`composer test:phpunit`)
 - All tests pass: **68 passed, 21 skipped** (185 assertions)
 
 ### PHP 8.4 Features Used

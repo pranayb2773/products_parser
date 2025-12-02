@@ -31,7 +31,6 @@
   },
   "scripts": {
     "test": "pest",
-    "test:phpunit": "phpunit --testdox",
     "test:parallel": "pest --parallel",
     "format": "php-cs-fixer fix",
     "check-format": "php-cs-fixer fix --dry-run --diff"
