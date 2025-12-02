@@ -6,15 +6,6 @@ use App\Cli\ParserApplication;
 use App\Cli\ParserOutputWriter;
 use App\Mapping\FieldMapper;
 use App\Parsers\ParserFactory;
-use App\Seeders\JsonSeeder;
-use App\Seeders\ProductDataGenerator;
-
-function seedJsonFile(string $dir, int $count): string
-{
-    $path = $dir . '/seed.json';
-    new JsonSeeder(new ProductDataGenerator())->seed($path, $count);
-    return $path;
-}
 
 beforeEach(function () {
     $this->tempDir = sys_get_temp_dir() . '/cli_tests_' . uniqid();

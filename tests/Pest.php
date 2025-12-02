@@ -64,3 +64,39 @@ function cleanupDir(string $dir): void
         rmdir($dir);
     }
 }
+
+use App\Enums\CsvDelimiter;
+use App\Seeders\CsvSeeder;
+use App\Seeders\JsonSeeder;
+use App\Seeders\NdjsonSeeder;
+use App\Seeders\ProductDataGenerator;
+use App\Seeders\XmlSeeder;
+
+function seedCsvFile(string $dir, int $count, CsvDelimiter $delimiter = CsvDelimiter::COMMA): string
+{
+    $extension = $delimiter === CsvDelimiter::TAB ? 'tsv' : 'csv';
+    $path = $dir . '/seed.' . $extension;
+    (new CsvSeeder(new ProductDataGenerator(), $delimiter))->seed($path, $count);
+    return $path;
+}
+
+function seedJsonFile(string $dir, int $count): string
+{
+    $path = $dir . '/seed.json';
+    (new JsonSeeder(new ProductDataGenerator()))->seed($path, $count);
+    return $path;
+}
+
+function seedNdjsonFile(string $dir, int $count): string
+{
+    $path = $dir . '/seed.ndjson';
+    (new NdjsonSeeder(new ProductDataGenerator()))->seed($path, $count);
+    return $path;
+}
+
+function seedXmlFile(string $dir, int $count): string
+{
+    $path = $dir . '/seed.xml';
+    (new XmlSeeder(new ProductDataGenerator()))->seed($path, $count);
+    return $path;
+}

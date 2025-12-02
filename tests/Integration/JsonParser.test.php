@@ -5,23 +5,6 @@ declare(strict_types=1);
 use App\Mapping\FieldMapper;
 use App\Models\Product;
 use App\Parsers\JsonParser;
-use App\Seeders\JsonSeeder;
-use App\Seeders\NdjsonSeeder;
-use App\Seeders\ProductDataGenerator;
-
-function seedJsonFile(string $dir, int $count): string
-{
-    $path = $dir . '/seed.json';
-    new JsonSeeder(new ProductDataGenerator())->seed($path, $count);
-    return $path;
-}
-
-function seedNdjsonFile(string $dir, int $count): string
-{
-    $path = $dir . '/seed.ndjson';
-    new NdjsonSeeder(new ProductDataGenerator())->seed($path, $count);
-    return $path;
-}
 
 beforeEach(function () {
     $this->tempDir = sys_get_temp_dir() . '/parser_tests_' . uniqid();

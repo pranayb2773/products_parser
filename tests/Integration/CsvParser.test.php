@@ -2,22 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Enums\CsvDelimiter;
 use App\Mapping\FieldMapper;
 use App\Models\Product;
 use App\Parsers\CsvParser;
-use App\Seeders\CsvSeeder;
-use App\Seeders\ProductDataGenerator;
-
-function seedCsvFile(string $dir, int $count, CsvDelimiter $delimiter = CsvDelimiter::COMMA): string
-{
-    $extension = $delimiter === CsvDelimiter::TAB ? 'tsv' : 'csv';
-    $path = $dir . '/seed.' . $extension;
-    $seeder = new CsvSeeder(new ProductDataGenerator(), $delimiter);
-    $seeder->seed($path, $count);
-
-    return $path;
-}
+use App\Enums\CsvDelimiter;
 
 beforeEach(function () {
     $this->tempDir = sys_get_temp_dir() . '/parser_tests_' . uniqid();

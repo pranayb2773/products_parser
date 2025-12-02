@@ -5,15 +5,6 @@ declare(strict_types=1);
 use App\Mapping\FieldMapper;
 use App\Models\Product;
 use App\Parsers\XmlParser;
-use App\Seeders\ProductDataGenerator;
-use App\Seeders\XmlSeeder;
-
-function seedXmlFile(string $dir, int $count): string
-{
-    $path = $dir . '/seed.xml';
-    new XmlSeeder(new ProductDataGenerator())->seed($path, $count);
-    return $path;
-}
 
 beforeEach(function () {
     $this->tempDir = sys_get_temp_dir() . '/parser_tests_' . uniqid();
