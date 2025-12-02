@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Enums\CsvDelimiter;
 use App\Mapping\FieldMapper;
 use App\Models\Product;
 use App\Parsers\CsvParser;
-use App\Enums\CsvDelimiter;
 
 beforeEach(function () {
     $this->tempDir = sys_get_temp_dir() . '/parser_tests_' . uniqid();
