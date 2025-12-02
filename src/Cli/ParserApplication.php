@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Cli;
 
+use App\Contracts\FileParserInterface;
 use App\Mapping\FieldMapper;
 use App\Parsers\ParserFactory;
 use App\Services\ParallelProcessor;
@@ -85,7 +86,7 @@ final readonly class ParserApplication
     /**
      * @throws JsonException
      */
-    private function processFileSequential(ParserOptions $options, $parser, float $start): int
+    private function processFileSequential(ParserOptions $options, FileParserInterface $parser, float $start): int
     {
         $uniqueCounter = new UniqueCounter();
         $productCount = 0;
@@ -109,7 +110,7 @@ final readonly class ParserApplication
     /**
      * @throws JsonException
      */
-    private function processFileParallel(ParserOptions $options, $parser, float $start): int
+    private function processFileParallel(ParserOptions $options, FileParserInterface $parser, float $start): int
     {
         $parallelProcessor = new ParallelProcessor($options->parallelWorkers, $this->output);
         $uniqueCounter = $parallelProcessor->process($parser, $options->inputFile);

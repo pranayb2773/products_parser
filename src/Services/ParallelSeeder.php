@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Cli\SeederOutputWriter;
+use App\Seeders\ProductDataGenerator;
 use Exception;
 use RuntimeException;
 
@@ -88,7 +89,7 @@ final class ParallelSeeder
     private function runWorker(int $workerIndex, string $seederClass, string $tempFile, int $count): void
     {
         try {
-            $generator = new \App\Seeders\ProductDataGenerator();
+            $generator = new ProductDataGenerator();
             $seeder = new $seederClass($generator);
             $seeder->seed($tempFile, $count);
         } catch (Exception $e) {
@@ -157,7 +158,7 @@ final class ParallelSeeder
     private function mergeJsonFiles(string $outputPath): void
     {
         $output = fopen($outputPath, 'wb');
-        fwrite($output, "[\n"); // Start main array
+        fwrite($output, "[\n"); // Start the main array
 
         foreach ($this->tempFiles as $index => $tempFile) {
             $fileSize = filesize($tempFile);
