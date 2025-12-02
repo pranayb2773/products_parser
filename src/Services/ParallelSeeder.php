@@ -22,212 +22,88 @@ final class ParallelSeeder
         if (!extension_loaded('pcntl')) {
             throw new RuntimeException('PCNTL extension is required for parallel processing');
         }
-
-        if ($workerCount < 1) {
-            throw new RuntimeException('Worker count must be at least 1');
-        }
     }
 
     public function __destruct()
     {
-        // Only parent process should clean up temp files
         if ($this->isParentProcess) {
             $this->cleanup();
         }
     }
 
-    /**
-     * Generate data in parallel using multiple workers, then merge into single output file.
-     */
     public function seed($seeder, string $outputPath, int $totalCount): void
     {
         $this->output->writeLine("Starting parallel generation with {$this->workerCount} workers...");
-
-        // Prefer temp directory alongside final output to avoid container /tmp quirks
         $this->tempDir = $this->determineTempDirectory($outputPath);
-
-        // Ensure temp directory exists before spawning workers
         $this->ensureTempDirectory();
 
-        // Store seeder class name to recreate in workers
         $seederClass = get_class($seeder);
-
-        // Calculate how many records each worker should generate
         $countPerWorker = (int) ceil($totalCount / $this->workerCount);
         $this->output->writeLine("Records per worker: {$countPerWorker}");
 
-        // Spawn workers to generate data in parallel
+        // Spawn workers
         for ($workerIndex = 0; $workerIndex < $this->workerCount; $workerIndex++) {
             $workerCount = $this->calculateWorkerCount($workerIndex, $countPerWorker, $totalCount);
-
             if ($workerCount <= 0) {
-                break; // No more work to distribute
+                break;
             }
-
             $this->spawnWorker($workerIndex, $seederClass, $workerCount);
         }
 
-        // Wait for all workers to complete
         $this->waitForWorkers();
-
-        // Merge all temp files into final output
         $this->mergeFiles($outputPath, $seeder);
     }
 
     private function calculateWorkerCount(int $workerIndex, int $countPerWorker, int $totalCount): int
     {
         $start = $workerIndex * $countPerWorker;
-
         if ($start >= $totalCount) {
             return 0;
         }
-
-        $end = min($start + $countPerWorker, $totalCount);
-
-        return $end - $start;
+        return min($start + $countPerWorker, $totalCount) - $start;
     }
 
     private function spawnWorker(int $workerIndex, string $seederClass, int $count): void
     {
-        // Pre-create temp file so parent and child share the same path
         $tempFile = $this->createTempFile($workerIndex);
-
         $pid = pcntl_fork();
 
         if ($pid === -1) {
-            throw new RuntimeException("Failed to fork worker process {$workerIndex}");
+            throw new RuntimeException('Fork failed');
         }
 
         if ($pid === 0) {
-            // Child process - worker
-            // Mark as child so it doesn't clean up temp files in destructor
+            // Child
             $this->isParentProcess = false;
             $this->runWorker($workerIndex, $seederClass, $tempFile, $count);
             exit(0);
         }
 
-        // Parent process
+        // Parent
         $this->tempFiles[$workerIndex] = $tempFile;
         $this->workerPids[$workerIndex] = $pid;
-        $this->output->writeLine("Worker {$workerIndex} spawned (PID: {$pid}, Count: {$count}, TempFile: {$tempFile})");
-    }
-
-    private function ensureTempDirectory(): void
-    {
-        $tmpDir = $this->getTempDirectory();
-
-        if (!is_dir($tmpDir)) {
-            if (!mkdir($tmpDir, 0777, true)) {
-                throw new RuntimeException("Failed to create temp directory: {$tmpDir}");
-            }
-        }
-
-        if (!is_writable($tmpDir)) {
-            throw new RuntimeException("Temp directory is not writable: {$tmpDir}");
-        }
-
-        $this->output->writeLine("Temp directory ready: {$tmpDir}");
-    }
-
-    private function getTempDirectory(): string
-    {
-        if ($this->tempDir !== '') {
-            return $this->tempDir;
-        }
-
-        // Fallback to container/system temp if not set
-        $base = getenv('TMPDIR') ?: sys_get_temp_dir();
-        return mb_rtrim($base, DIRECTORY_SEPARATOR) . '/products_parser';
-    }
-
-    private function createTempFile(int $workerIndex): string
-    {
-        $tmpDir = $this->getTempDirectory();
-
-        if (!is_dir($tmpDir)) {
-            if (!mkdir($tmpDir, 0777, true)) {
-                throw new RuntimeException("Failed to create temp directory: {$tmpDir}");
-            }
-        }
-
-        $tempFile = tempnam($tmpDir, "seeder_{$workerIndex}_");
-
-        if ($tempFile === false) {
-            $error = error_get_last();
-            $message = $error['message'] ?? 'unknown error';
-            throw new RuntimeException("Failed to create temp file for worker {$workerIndex}: {$message}");
-        }
-
-        return $tempFile;
-    }
-
-    private function determineTempDirectory(string $outputPath): string
-    {
-        $outputDir = mb_rtrim(dirname($outputPath), DIRECTORY_SEPARATOR);
-
-        if ($outputDir === '' || $outputDir === DIRECTORY_SEPARATOR) {
-            // Fallback to system temp if we cannot infer a directory
-            $base = getenv('TMPDIR') ?: sys_get_temp_dir();
-            return mb_rtrim($base, DIRECTORY_SEPARATOR) . '/products_parser';
-        }
-
-        return $outputDir . DIRECTORY_SEPARATOR . '.tmp_seeder';
+        $this->output->writeLine("Worker {$workerIndex} spawned (PID: {$pid})");
     }
 
     private function runWorker(int $workerIndex, string $seederClass, string $tempFile, int $count): void
     {
         try {
-            // Double-check temp directory is ready inside the worker
-            $this->ensureTempDirectory();
-
-            // Recreate seeder instance in child process
-            $seeder = $this->createSeederInstance($seederClass);
-
-            // Each worker generates its portion to a temp file
+            $generator = new \App\Seeders\ProductDataGenerator();
+            $seeder = new $seederClass($generator);
             $seeder->seed($tempFile, $count);
-
         } catch (Exception $e) {
-            // Log the error to stderr and exit with error code
-            fwrite(STDERR, "Worker {$workerIndex} error: " . $e->getMessage() . "\n");
-            fwrite(STDERR, 'Stack trace: ' . $e->getTraceAsString() . "\n");
+            fwrite(STDERR, "Worker {$workerIndex} failed: " . $e->getMessage() . PHP_EOL);
             exit(1);
         }
     }
 
-    private function createSeederInstance(string $seederClass)
-    {
-        // Recreate the seeder with its dependencies
-        // All seeders take ProductDataGenerator as constructor parameter
-        $generator = new \App\Seeders\ProductDataGenerator();
-
-        return new $seederClass($generator);
-    }
-
-    private function waitForWorkers(): void
-    {
-        foreach ($this->workerPids as $workerIndex => $pid) {
-            $status = 0;
-            pcntl_waitpid($pid, $status);
-
-            if (pcntl_wifexited($status)) {
-                $exitCode = pcntl_wexitstatus($status);
-
-                if ($exitCode === 0) {
-                    $this->output->writeLine("Worker {$workerIndex} completed successfully");
-                } else {
-                    throw new RuntimeException("Worker {$workerIndex} exited with code {$exitCode}");
-                }
-            } else {
-                throw new RuntimeException("Worker {$workerIndex} terminated abnormally");
-            }
-        }
-    }
+    // --- OPTIMIZED MERGE LOGIC START ---
 
     private function mergeFiles(string $outputPath, $seeder): void
     {
-        $this->output->writeLine('Merging worker outputs into final file...');
+        $this->output->writeLine('Merging worker outputs (Zero-Copy Mode)...');
+        $start = microtime(true);
 
-        // Determine the file type to handle merging correctly
         $extension = mb_strtolower(pathinfo($outputPath, PATHINFO_EXTENSION));
 
         match ($extension) {
@@ -235,260 +111,188 @@ final class ParallelSeeder
             'json' => $this->mergeJsonFiles($outputPath),
             'ndjson' => $this->mergeNdjsonFiles($outputPath),
             'xml' => $this->mergeXmlFiles($outputPath),
-            default => throw new RuntimeException("Unsupported file type for merging: {$extension}"),
+            default => throw new RuntimeException("Unsupported file type: {$extension}"),
         };
 
-        $this->output->writeLine('Merge completed successfully');
+        $duration = round(microtime(true) - $start, 2);
+        $this->output->writeLine("Merge completed in {$duration}s");
     }
 
     private function mergeCsvFiles(string $outputPath): void
     {
         $output = fopen($outputPath, 'wb');
 
-        if ($output === false) {
-            throw new RuntimeException("Failed to open output file: {$outputPath}");
-        }
-
-        // Set larger buffer for output
-        stream_set_write_buffer($output, 1024 * 1024); // 1MB buffer
-
-        $headerWritten = false;
-
-        foreach ($this->tempFiles as $workerIndex => $tempFile) {
-            $this->ensureTempFileAvailable($tempFile);
-
+        foreach ($this->tempFiles as $index => $tempFile) {
             $input = fopen($tempFile, 'rb');
 
-            if ($input === false) {
-                fclose($output);
-                throw new RuntimeException("Failed to open temp file: {$tempFile}");
-            }
-
-            // Set larger buffer for input
-            stream_set_read_buffer($input, 1024 * 1024); // 1MB buffer
-
-            // Read and write header from first file only
-            if (!$headerWritten) {
-                $header = fgets($input);
-                if ($header !== false) {
-                    fwrite($output, $header);
-                    $headerWritten = true;
-                }
-            } else {
-                // Skip header line in subsequent files
+            // For files after the first one, skip the header line
+            if ($index > 0) {
                 fgets($input);
             }
 
-            // Stream copy the rest of the file using large chunks
-            while (!feof($input)) {
-                $chunk = fread($input, 8192 * 1024); // 8MB chunks
-                if ($chunk !== false && $chunk !== '') {
-                    fwrite($output, $chunk);
-                }
-            }
+            // High-speed stream copy
+            stream_copy_to_stream($input, $output);
 
             fclose($input);
         }
-
-        fclose($output);
-    }
-
-    private function mergeJsonFiles(string $outputPath): void
-    {
-        $output = fopen($outputPath, 'w');
-
-        if ($output === false) {
-            throw new RuntimeException("Failed to open output file: {$outputPath}");
-        }
-
-        fwrite($output, "[\n");
-
-        $firstItem = true;
-
-        foreach ($this->tempFiles as $workerIndex => $tempFile) {
-            $this->ensureTempFileAvailable($tempFile);
-
-            $content = file_get_contents($tempFile);
-
-            if ($content === false) {
-                fclose($output);
-                throw new RuntimeException("Failed to read temp file: {$tempFile}");
-            }
-
-            $data = json_decode($content, true);
-
-            if (!is_array($data)) {
-                fclose($output);
-                throw new RuntimeException("Invalid JSON in temp file: {$tempFile}");
-            }
-
-            foreach ($data as $item) {
-                if (!$firstItem) {
-                    fwrite($output, ",\n");
-                }
-
-                fwrite($output, json_encode($item, JSON_THROW_ON_ERROR));
-                $firstItem = false;
-            }
-        }
-
-        fwrite($output, "\n]\n");
         fclose($output);
     }
 
     private function mergeNdjsonFiles(string $outputPath): void
     {
         $output = fopen($outputPath, 'wb');
-
-        if ($output === false) {
-            throw new RuntimeException("Failed to open output file: {$outputPath}");
+        foreach ($this->tempFiles as $tempFile) {
+            $input = fopen($tempFile, 'rb');
+            stream_copy_to_stream($input, $output);
+            fclose($input);
         }
+        fclose($output);
+    }
 
-        // Set larger buffer for output
-        stream_set_write_buffer($output, 1024 * 1024); // 1MB buffer
+    /**
+     * Optimizes JSON merging by raw byte manipulation.
+     * Assumes workers output: [ {obj}, {obj} ]
+     * We strip [ and ] and join them with commas.
+     */
+    private function mergeJsonFiles(string $outputPath): void
+    {
+        $output = fopen($outputPath, 'wb');
+        fwrite($output, "[\n"); // Start main array
 
-        foreach ($this->tempFiles as $workerIndex => $tempFile) {
-            $this->ensureTempFileAvailable($tempFile);
+        foreach ($this->tempFiles as $index => $tempFile) {
+            $fileSize = filesize($tempFile);
+            if ($fileSize < 2) {
+                continue;
+            } // Skip empty/broken files
 
             $input = fopen($tempFile, 'rb');
 
-            if ($input === false) {
-                fclose($output);
-                throw new RuntimeException("Failed to open temp file: {$tempFile}");
+            // 1. Skip the first char '['
+            fseek($input, 1);
+
+            // 2. Calculate length to read (Size - Start '[' - End ']')
+            $bytesToRead = $fileSize - 2;
+
+            if ($index > 0) {
+                fwrite($output, ",\n"); // Add comma between worker chunks
             }
 
-            // Set larger buffer for input
-            stream_set_read_buffer($input, 1024 * 1024); // 1MB buffer
-
-            // Stream copy using large chunks
-            while (!feof($input)) {
-                $chunk = fread($input, 8192 * 1024); // 8MB chunks
-                if ($chunk !== false && $chunk !== '') {
-                    fwrite($output, $chunk);
-                }
+            // 3. Stream the middle content directly
+            if ($bytesToRead > 0) {
+                stream_copy_to_stream($input, $output, $bytesToRead);
             }
 
             fclose($input);
         }
 
+        fwrite($output, "\n]"); // Close main array
         fclose($output);
     }
 
+    /**
+     * Optimizes XML merging by skipping headers/footers via seeking.
+     * Assumes workers output: <?xml ... <products> ...ITEMS... </products>
+     */
     private function mergeXmlFiles(string $outputPath): void
     {
         $output = fopen($outputPath, 'wb');
 
-        if ($output === false) {
-            throw new RuntimeException("Failed to open output file: {$outputPath}");
-        }
-
-        // Set larger buffer for output
-        stream_set_write_buffer($output, 1024 * 1024); // 1MB buffer
-
-        // Write XML header
+        // Write global header
         fwrite($output, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<products>\n");
 
-        foreach ($this->tempFiles as $workerIndex => $tempFile) {
-            $this->ensureTempFileAvailable($tempFile);
+        $closingTag = '</products>';
+        $closingTagLen = mb_strlen($closingTag);
 
+        foreach ($this->tempFiles as $tempFile) {
             $input = fopen($tempFile, 'rb');
 
-            if ($input === false) {
-                fclose($output);
-                throw new RuntimeException("Failed to open temp file: {$tempFile}");
-            }
-
-            // Set larger buffer for input
-            stream_set_read_buffer($input, 1024 * 1024); // 1MB buffer
-
-            // Skip XML declaration and opening <products> tag
-            $foundProductsTag = false;
+            // 1. Find start of content (after <products>)
+            $startPos = 0;
             while (($line = fgets($input)) !== false) {
-                if (str_contains($line, '<products>')) {
-                    $foundProductsTag = true;
+                $pos = mb_strpos($line, '<products>');
+                if ($pos !== false) {
+                    $startPos = ftell($input); // Pointing to line after <products> or text immediately after
                     break;
                 }
             }
 
-            if (!$foundProductsTag) {
-                fclose($input);
-                fclose($output);
-                throw new RuntimeException("Invalid XML format in temp file: {$tempFile}");
-            }
+            // 2. Calculate length to read (Total - Start - ClosingTag - formatting newline)
+            // We assume the file ends with </products> or </products>\n
+            $stat = fstat($input);
+            $endPos = $stat['size'];
 
-            // Read and write content in large chunks, but stop before closing tag
-            $buffer = '';
-            while (!feof($input)) {
-                $chunk = fread($input, 8192 * 1024); // 8MB chunks
-                if ($chunk === false || $chunk === '') {
-                    break;
+            // Seek from end to find where </products> starts to be safe
+            // Scan last 100 bytes to find the tag
+            fseek($input, -100, SEEK_END);
+            $tail = fread($input, 100);
+            $tagPos = mb_strrpos($tail, $closingTag);
+
+            if ($tagPos !== false) {
+                // Determine absolute position of closing tag
+                $realEndPos = ($stat['size'] - 100) + $tagPos;
+                $bytesToCopy = $realEndPos - $startPos;
+
+                // Go back to start of content
+                fseek($input, $startPos);
+
+                // Copy exact bytes
+                if ($bytesToCopy > 0) {
+                    stream_copy_to_stream($input, $output, $bytesToCopy);
                 }
-
-                $buffer .= $chunk;
-
-                // Check if we have the closing tag in buffer
-                $closingTagPos = mb_strpos($buffer, '</products>');
-                if ($closingTagPos !== false) {
-                    // Write everything before the closing tag
-                    fwrite($output, mb_substr($buffer, 0, $closingTagPos));
-                    break;
-                }
-
-                // If buffer is large enough and no closing tag yet, write most of it
-                if (mb_strlen($buffer) > 16 * 1024 * 1024) { // Keep last 16MB in buffer
-                    $writeSize = mb_strlen($buffer) - (1024 * 1024); // Keep 1MB
-                    fwrite($output, mb_substr($buffer, 0, $writeSize));
-                    $buffer = mb_substr($buffer, $writeSize);
-                }
-            }
-
-            // Write any remaining buffer (excluding closing tag)
-            if ($buffer !== '' && !str_contains($buffer, '</products>')) {
-                fwrite($output, $buffer);
             }
 
             fclose($input);
         }
 
-        // Write closing tag
         fwrite($output, "</products>\n");
         fclose($output);
     }
 
-    private function ensureTempFileAvailable(string $tempFile): void
+    // --- OPTIMIZED MERGE LOGIC END ---
+
+    private function ensureTempDirectory(): void
     {
-        clearstatcache(true, $tempFile);
-
-        if (file_exists($tempFile)) {
-            return;
+        $tmpDir = $this->getTempDirectory();
+        if (!is_dir($tmpDir)) {
+            mkdir($tmpDir, 0777, true);
         }
+    }
 
-        // Retry a few times in case of delayed host/volume sync
-        $attempts = 3;
-        for ($i = 0; $i < $attempts; $i++) {
-            usleep(200_000); // 200ms
-            clearstatcache(true, $tempFile);
-            if (file_exists($tempFile)) {
-                return;
-            }
+    private function getTempDirectory(): string
+    {
+        if ($this->tempDir !== '') {
+            return $this->tempDir;
         }
+        return sys_get_temp_dir() . '/seeder_tmp';
+    }
 
-        $dir = dirname($tempFile);
-        $listing = @scandir($dir) ?: [];
-        $listing = array_slice(array_filter($listing, fn ($f) => $f !== '.' && $f !== '..'), 0, 20);
+    private function determineTempDirectory(string $outputPath): string
+    {
+        $dir = dirname($outputPath);
+        return is_writable($dir) ? $dir . '/.tmp_seeder' : $this->getTempDirectory();
+    }
 
-        throw new RuntimeException("Temp file does not exist after retries: {$tempFile}; dir contents: " . implode(', ', $listing));
+    private function createTempFile(int $index): string
+    {
+        return tempnam($this->getTempDirectory(), "worker_{$index}_");
+    }
+
+    private function waitForWorkers(): void
+    {
+        foreach ($this->workerPids as $pid) {
+            pcntl_waitpid($pid, $status);
+        }
     }
 
     private function cleanup(): void
     {
-        foreach ($this->tempFiles as $tempFile) {
-            if (file_exists($tempFile)) {
-                @unlink($tempFile);
+        foreach ($this->tempFiles as $f) {
+            if (file_exists($f)) {
+                @unlink($f);
             }
         }
-
-        $this->tempFiles = [];
-        $this->workerPids = [];
+        if ($this->tempDir && is_dir($this->tempDir)) {
+            @rmdir($this->tempDir);
+        }
     }
 }

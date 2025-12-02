@@ -13,7 +13,8 @@
     "php": "^8.4",
     "ext-pcntl": "*",
     "ext-dom": "*",
-    "ext-simplexml": "*"
+    "ext-simplexml": "*",
+    "ext-xmlreader": "*"
   },
   "autoload": {
     "psr-4": {

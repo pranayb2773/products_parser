@@ -14,7 +14,8 @@ final readonly class CsvSeeder implements SeederInterface
     public function __construct(
         private ProductDataGenerator $generator,
         private CsvDelimiter $csvDelimiter = CsvDelimiter::COMMA
-    ) {}
+    ) {
+    }
 
     public function seed(string $outputPath, int $count): void
     {
