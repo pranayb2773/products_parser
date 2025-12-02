@@ -11,7 +11,9 @@
   ],
   "require": {
     "php": "^8.4",
-    "ext-pcntl": "*"
+    "ext-pcntl": "*",
+    "ext-dom": "*",
+    "ext-simplexml": "*"
   },
   "autoload": {
     "psr-4": {

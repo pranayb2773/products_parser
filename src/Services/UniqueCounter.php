@@ -69,6 +69,7 @@ final class UniqueCounter
     public function writeToCsv(string $filePath): void
     {
         $this->ensureAggregated();
+        $this->ensureOutputDirectoryExists($filePath);
         $handle = fopen($filePath, 'w');
 
         if ($handle === false) {
@@ -89,6 +90,7 @@ final class UniqueCounter
     public function writeToJson(string $filePath): void
     {
         $this->ensureAggregated();
+        $this->ensureOutputDirectoryExists($filePath);
         $data = [];
 
         foreach ($this->combinations as $combinationData) {
@@ -117,6 +119,7 @@ final class UniqueCounter
     public function writeToXml(string $filePath): void
     {
         $this->ensureAggregated();
+        $this->ensureOutputDirectoryExists($filePath);
         $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><products></products>');
 
         foreach ($this->combinations as $combinationData) {
@@ -292,5 +295,18 @@ final class UniqueCounter
         }
 
         $this->tempFiles = [];
+    }
+
+    private function ensureOutputDirectoryExists(string $filePath): void
+    {
+        $directory = dirname($filePath);
+
+        if ($directory === '' || $directory === '.') {
+            return;
+        }
+
+        if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new RuntimeException("Failed to create directory for output file: {$directory}");
+        }
     }
 }

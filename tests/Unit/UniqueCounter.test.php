@@ -170,3 +170,22 @@ test('write to file auto detects format', function () {
     expect($xmlData)->not->toBeFalse();
     unlink($xmlFile);
 });
+
+test('write methods create missing directories', function () {
+    $counter = new UniqueCounter();
+    $product = Product::fromArray(['make' => 'Apple', 'model' => 'iPhone 15']);
+    $counter->addProduct($product);
+
+    $dir = sys_get_temp_dir() . '/unique_counter_' . uniqid();
+    $file = $dir . '/nested/output.json';
+
+    expect(is_dir($dir))->toBeFalse();
+
+    $counter->writeToJson($file);
+
+    expect($file)->toBeFile();
+
+    unlink($file);
+    rmdir($dir . '/nested');
+    rmdir($dir);
+});
