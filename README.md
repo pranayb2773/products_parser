@@ -17,7 +17,7 @@ Supplier product list processor in modern native PHP. Streams large CSV/TSV, JSO
 
 ## Installation
 ```bash
-composer install --no-interaction --prefer-dist
+composer install --no-interaction --ignore-platform-reqs
 ```
 
 ## CLI: parser
